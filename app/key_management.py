@@ -17,10 +17,15 @@ from functools import wraps
 
 key_bp = Blueprint('key', __name__, url_prefix='/api/key')
 
-BASE_DIR = r"C:\Users\17544\.openclaw\workspace\main\StegoShield\desktop\backend"
-DATABASE = r"C:\Users\17544\.openclaw\workspace\main\StegoShield\desktop\backend\keys.db"
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE = os.environ.get('KEYS_DB_PATH', os.path.join(DATA_DIR, 'keys.db'))
 
-ADMIN_TOKEN = "kms_admin_secret_2024"
+ADMIN_TOKEN = os.environ.get('KMS_ADMIN_TOKEN', 'kms_admin_secret_2024')
+
+init_key_db()
 
 def get_db():
     """获取数据库连接"""
