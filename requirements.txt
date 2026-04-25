@@ -1,0 +1,10 @@
+flask
+flask-cors
+flask-sqlalchemy
+gunicorn
+numpy
+Pillow
+pycryptodome
+scipy
+pytest
+python-dotenv
