@@ -1,6 +1,8 @@
 flask
 flask-cors
 flask-sqlalchemy
+flask-socketio
+python-socketio
 gunicorn
 numpy
 Pillow
