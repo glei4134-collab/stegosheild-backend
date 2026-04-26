@@ -25,6 +25,16 @@ DATABASE = os.environ.get('KEYS_DB_PATH', os.path.join(DATA_DIR, 'keys.db'))
 
 ADMIN_TOKEN = os.environ.get('KMS_ADMIN_TOKEN', 'kms_admin_secret_2024')
 
+try:
+    from app import socketio
+    from app.socket_events import broadcast_key_generated, broadcast_key_activated, broadcast_stats_update
+    WEBSOCKET_AVAILABLE = True
+except ImportError:
+    WEBSOCKET_AVAILABLE = False
+    def broadcast_key_generated(keys): pass
+    def broadcast_key_activated(key, username, days): pass
+    def broadcast_stats_update(stats): pass
+
 init_key_db()
 
 def get_db():
@@ -149,6 +159,12 @@ def generate_keys():
     conn.commit()
     conn.close()
 
+    if WEBSOCKET_AVAILABLE and generated_keys:
+        try:
+            broadcast_key_generated(generated_keys)
+        except Exception as e:
+            print(f"WebSocket broadcast error: {e}")
+
     return jsonify({
         'success': True,
         'message': f'成功生成{len(generated_keys)}个密钥',
@@ -248,6 +264,12 @@ def validate_key():
 
     conn.commit()
     conn.close()
+
+    if WEBSOCKET_AVAILABLE:
+        try:
+            broadcast_key_activated(key_code, username, key_row['vip_days'])
+        except Exception as e:
+            print(f"WebSocket broadcast error: {e}")
 
     return jsonify({
         'success': True,
