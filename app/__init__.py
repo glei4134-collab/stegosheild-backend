@@ -1,10 +1,12 @@
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO
 import os
 
 from app.config import Config
 from app.errors import StegoError
 
+socketio = SocketIO()
 
 def create_app():
     """Flask application factory."""
@@ -12,12 +14,12 @@ def create_app():
     app.config.from_object(Config)
 
     cors_origins = Config.CORS_ORIGINS if hasattr(Config, 'CORS_ORIGINS') else '*'
-    
+
     if cors_origins == '*':
         allowed_origins = ['http://127.0.0.1:5001', 'http://localhost:5001', 'http://127.0.0.1:*', 'http://localhost:*']
     else:
         allowed_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
-    
+
     CORS(app, resources={
         r"/api/*": {
             "origins": allowed_origins,
@@ -49,13 +51,14 @@ def create_app():
         return jsonify({
             'status': 'running',
             'service': 'StegoShield Backend',
-            'version': '1.0.0',
+            'version': '1.1.0',
             'endpoints': {
                 'api': '/api/health',
                 'auth': '/api/auth',
                 'stego': '/api/stego',
                 'keys': '/api/key'
-            }
+            },
+            'websocket': '/socket.io'
         })
 
     @app.route('/test')
@@ -64,7 +67,7 @@ def create_app():
             'status': 'ok',
             'service': 'StegoShield Backend'
         })
-    
+
     @app.route('/<path:filename>.html')
     def serve_html(filename):
         if '..' in filename or filename.startswith('/'):
@@ -73,14 +76,14 @@ def create_app():
         if os.path.exists(html_path):
             return send_from_directory(frontend_dir, filename + '.html')
         return '<h1>404 Not Found</h1>', 404
-    
+
     @app.route('/simple.html')
     def simple():
         simple_path = os.path.join(frontend_dir, 'simple.html')
         if os.path.exists(simple_path):
             return send_from_directory(frontend_dir, 'simple.html')
         return '<h1>StegoShield</h1>'
-    
+
     @app.route('/css/<path:filename>')
     def serve_css(filename):
         if '..' in filename or filename.startswith('/'):
@@ -110,7 +113,7 @@ def create_app():
                 'message': '服务器内部错误'
             }
         }), 500
-    
+
     @app.errorhandler(403)
     def forbidden(e):
         return jsonify({
@@ -120,5 +123,7 @@ def create_app():
                 'message': '禁止访问'
             }
         }), 403
+
+    socketio.init_app(app, cors_allowed_origins="*")
 
     return app
